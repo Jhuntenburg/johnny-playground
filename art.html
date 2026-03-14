@@ -173,8 +173,8 @@
     <button class="shape-btn" onclick="pickShape(this, 'triangle')">Triangle</button>
     <button class="shape-btn" onclick="pickShape(this, 'star')">Star</button>
     <button class="shape-btn" onclick="pickShape(this, 'diamond')">Diamond</button>
-    <button class="shape-btn" onclick="pickShape(this, 'split')">Split</button>
     <button class="shape-btn" onclick="pickShape(this, 'glitter')">Glitter</button>
+    <button class="shape-btn" id="split-btn" onclick="toggleSplit()">Split: Off</button>
     <button class="shape-btn" style="background:rgba(255,255,255,0.2)" onclick="fillCanvas()">Fill</button>
     <button class="shape-btn" style="background:rgba(255,0,0,0.2)" onclick="clearCanvas()">Clear</button>
   </div>
@@ -365,21 +365,14 @@
       return "hsl(" + oppositeHue + ", " + hsl[1] + "%, " + brightness + "%)";
     }
 
-    // This draws a split circle — half one color, half the opposite!
-    function drawSplit(x, y) {
-      var size = brushSize / 2 + Math.random() * (brushSize / 4);
+    // Split mode — on or off
+    var splitMode = false;
+    var splitBtn = document.getElementById("split-btn");
 
-      // Left half — your picked color
-      ctx.beginPath();
-      ctx.arc(x, y, size, Math.PI * 0.5, Math.PI * 1.5);
-      ctx.fillStyle = getColor();
-      ctx.fill();
-
-      // Right half — the opposite color
-      ctx.beginPath();
-      ctx.arc(x, y, size, Math.PI * 1.5, Math.PI * 0.5);
-      ctx.fillStyle = getOppositeColor();
-      ctx.fill();
+    function toggleSplit() {
+      splitMode = !splitMode;
+      splitBtn.textContent = splitMode ? "Split: On" : "Split: Off";
+      splitBtn.style.background = splitMode ? "rgba(255,255,0,0.3)" : "none";
     }
 
     // This is the brush size — the slider controls it!
@@ -405,31 +398,21 @@
       currentColor = color;
     }
 
-    // This draws a shape wherever we tell it
-    function drawShape(x, y) {
-      var size = brushSize / 2 + Math.random() * (brushSize / 4);
-      ctx.fillStyle = getColor();
+    // This builds a shape path (without filling it yet)
+    function shapePath(x, y, size) {
       ctx.beginPath();
-
       if (currentShape === "circle") {
-        // A circle is just a round path
         ctx.arc(x, y, size, 0, Math.PI * 2);
-
       } else if (currentShape === "square") {
-        // A square is a rectangle where all sides are the same length
         ctx.rect(x - size, y - size, size * 2, size * 2);
-
       } else if (currentShape === "triangle") {
-        // A triangle has 3 points — we draw lines between them
-        ctx.moveTo(x, y - size);           // top point
-        ctx.lineTo(x - size, y + size);    // bottom left
-        ctx.lineTo(x + size, y + size);    // bottom right
-        ctx.closePath();                    // connect back to the top
-
+        ctx.moveTo(x, y - size);
+        ctx.lineTo(x - size, y + size);
+        ctx.lineTo(x + size, y + size);
+        ctx.closePath();
       } else if (currentShape === "star") {
-        // A star has 5 outer points and 5 inner points
         for (var i = 0; i < 10; i++) {
-          var r = (i % 2 === 0) ? size : size / 2;  // big point, small point, big, small...
+          var r = (i % 2 === 0) ? size : size / 2;
           var angle = (Math.PI * 2 * i / 10) - Math.PI / 2;
           var px = x + r * Math.cos(angle);
           var py = y + r * Math.sin(angle);
@@ -437,25 +420,56 @@
           else ctx.lineTo(px, py);
         }
         ctx.closePath();
-
       } else if (currentShape === "diamond") {
-        // A diamond is like a square turned sideways
-        ctx.moveTo(x, y - size);      // top
-        ctx.lineTo(x + size, y);      // right
-        ctx.lineTo(x, y + size);      // bottom
-        ctx.lineTo(x - size, y);      // left
+        ctx.moveTo(x, y - size);
+        ctx.lineTo(x + size, y);
+        ctx.lineTo(x, y + size);
+        ctx.lineTo(x - size, y);
         ctx.closePath();
       }
+    }
 
-      ctx.fill();
+    // This draws a shape wherever we tell it
+    function drawShape(x, y) {
+      var size = brushSize / 2 + Math.random() * (brushSize / 4);
+
+      if (!splitMode) {
+        // Normal mode — one color
+        ctx.fillStyle = getColor();
+        shapePath(x, y, size);
+        ctx.fill();
+      } else {
+        // Split mode — left half is your color, right half is the opposite!
+        ctx.save();
+
+        // Draw left half: clip everything left of center, then fill
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(x - size - 1, y - size - 1, size + 1, size * 2 + 2);
+        ctx.clip();
+        ctx.fillStyle = getColor();
+        shapePath(x, y, size);
+        ctx.fill();
+        ctx.restore();
+
+        // Draw right half: clip everything right of center, then fill opposite color
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(x, y - size - 1, size + 1, size * 2 + 2);
+        ctx.clip();
+        ctx.fillStyle = getOppositeColor();
+        shapePath(x, y, size);
+        ctx.fill();
+        ctx.restore();
+
+        ctx.restore();
+      }
     }
 
     // This picks what to draw
     function draw(x, y) {
       if (currentShape === "glitter") {
         drawGlitter(x, y);
-      } else if (currentShape === "split") {
-        drawSplit(x, y);
       } else {
         drawShape(x, y);
       }

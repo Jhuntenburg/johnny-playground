@@ -2,17 +2,29 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <title>Johnny's Art Page</title>
   <style>
-    * { -webkit-user-select: none; user-select: none; }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overscroll-behavior: none;
+    }
+    * {
+      -webkit-user-select: none;
+      user-select: none;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
     #canvas { touch-action: none; }
     body {
       margin: 0;
       background: black;
       cursor: crosshair;
       overflow: hidden;
+      font-family: "Trebuchet MS", Arial, sans-serif;
     }
+    button, input, label { touch-action: manipulation; }
     #canvas {
       position: fixed;
       top: 0;
@@ -31,6 +43,11 @@
       flex-direction: column;
       align-items: center;
       gap: 6px;
+      padding-bottom: calc(8px + env(safe-area-inset-bottom));
+    }
+    #toolbar > div {
+      width: 100%;
+      max-width: 920px;
     }
     #colors {
       display: flex;
@@ -64,7 +81,6 @@
       cursor: pointer;
       font-size: 13px;
       color: white;
-      font-family: sans-serif;
       font-weight: bold;
     }
     .shape-btn.picked {
@@ -80,22 +96,35 @@
     }
     #sliders label {
       color: white;
-      font-family: sans-serif;
-      font-size: 13px;
+      font-size: 14px;
     }
     #size-slider, #bright-slider {
-      width: 120px;
+      width: min(32vw, 160px);
+      min-width: 110px;
+      height: 28px;
       cursor: pointer;
+    }
+    #size-preview-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 72px;
     }
     #size-preview {
       background: white;
       border-radius: 50%;
       display: inline-block;
+      flex: 0 0 auto;
+      border: 2px solid rgba(255,255,255,0.25);
+    }
+    #size-label {
+      color: white;
+      font-size: 14px;
+      min-width: 40px;
     }
     #bright-label {
       color: white;
-      font-family: sans-serif;
-      font-size: 13px;
+      font-size: 14px;
     }
     #glitter-colors {
       position: fixed;
@@ -115,7 +144,6 @@
     }
     #glitter-colors label {
       color: white;
-      font-family: sans-serif;
       font-size: 14px;
       font-weight: bold;
       text-align: center;
@@ -131,6 +159,35 @@
     .glitter-btn.picked {
       border: 3px solid yellow;
       transform: scale(1.3);
+    }
+    @media (max-width: 700px) {
+      #toolbar {
+        gap: 8px;
+        padding: 10px 8px calc(10px + env(safe-area-inset-bottom));
+      }
+      .shape-btn {
+        padding: 8px 10px;
+        font-size: 14px;
+      }
+      .color-btn {
+        width: 36px;
+        height: 36px;
+      }
+      #sliders label,
+      #bright-label,
+      #size-label {
+        font-size: 16px;
+      }
+      #size-slider, #bright-slider {
+        width: min(42vw, 180px);
+      }
+      #glitter-colors {
+        right: 10px;
+        top: auto;
+        bottom: 188px;
+        transform: none;
+        flex-direction: row;
+      }
     }
   </style>
 </head>
@@ -164,7 +221,10 @@
     <div id="sliders">
       <label>Brush:</label>
       <input type="range" id="size-slider" min="5" max="100" value="30">
-      <span id="size-preview" style="width:20px;height:20px;"></span>
+      <span id="size-preview-wrap">
+        <span id="size-preview" style="width:20px;height:20px;"></span>
+        <span id="size-label">30px</span>
+      </span>
       <label>Dark</label>
       <input type="range" id="bright-slider" min="0" max="100" value="50">
       <label>Bright</label>
@@ -197,6 +257,7 @@
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
       ctx.putImageData(imageData, 0, 0);
+      updateBrushPreview();
     });
 
     // Fill paints the WHOLE screen with your color (like pouring paint on it!)
@@ -372,12 +433,22 @@
     var brushSize = 30;
     var slider = document.getElementById("size-slider");
     var preview = document.getElementById("size-preview");
+    var sizeLabel = document.getElementById("size-label");
+
+    function updateBrushPreview() {
+      // Keep the preview bubble kid-sized on phones, even when the real brush is huge.
+      var previewCap = window.innerWidth < 700 ? 42 : 60;
+      var previewSize = Math.max(12, Math.min(brushSize, previewCap));
+      preview.style.width = previewSize + "px";
+      preview.style.height = previewSize + "px";
+      sizeLabel.textContent = brushSize + "px";
+    }
+
     slider.addEventListener("input", function() {
       brushSize = Number(slider.value);
-      // Update the little preview circle so you can see how big your brush is
-      preview.style.width = brushSize + "px";
-      preview.style.height = brushSize + "px";
+      updateBrushPreview();
     });
+    updateBrushPreview();
 
     // This runs when you click a color button
     function pickColor(btn, color) {
@@ -481,39 +552,36 @@
       }
     }
 
-    // --- Mouse events (for computers) ---
+    // --- Pointer events (mouse, touch, and pen) ---
     var painting = false;
+    var activePointerId = null;
 
-    canvas.addEventListener("mousedown", function(e) {
+    canvas.addEventListener("pointerdown", function(e) {
+      if (e.pointerType === "mouse" && e.button !== 0) return;
+      e.preventDefault();
       painting = true;
+      activePointerId = e.pointerId;
+      canvas.setPointerCapture(e.pointerId);
       draw(e.clientX, e.clientY);
-    });
-    canvas.addEventListener("mouseup", function() { painting = false; });
-    canvas.addEventListener("mousemove", function(e) {
-      if (painting) {
-        draw(e.clientX, e.clientY);
-      }
-    });
+    }, { passive: false });
 
-    // --- Touch events (for phones and tablets) ---
-    // We listen on the canvas only so tapping buttons doesn't draw
-    canvas.addEventListener("touchstart", function(e) {
+    canvas.addEventListener("pointermove", function(e) {
+      if (!painting || e.pointerId !== activePointerId) return;
       e.preventDefault();
-      painting = true;
-      var touch = e.touches[0];
-      draw(touch.clientX, touch.clientY);
+      draw(e.clientX, e.clientY);
     }, { passive: false });
-    canvas.addEventListener("touchend", function(e) {
-      e.preventDefault();
+
+    function stopPainting(e) {
+      if (activePointerId !== null && e.pointerId !== activePointerId) return;
       painting = false;
-    }, { passive: false });
-    canvas.addEventListener("touchmove", function(e) {
-      e.preventDefault();
-      if (painting) {
-        var touch = e.touches[0];
-        draw(touch.clientX, touch.clientY);
+      if (activePointerId !== null && canvas.hasPointerCapture(activePointerId)) {
+        canvas.releasePointerCapture(activePointerId);
       }
-    }, { passive: false });
+      activePointerId = null;
+    }
+
+    canvas.addEventListener("pointerup", stopPainting);
+    canvas.addEventListener("pointercancel", stopPainting);
   </script>
 </body>
 </html>

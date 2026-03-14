@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Johnny's Art Page</title>
+  <style>
+    body {
+      margin: 0;
+      background: black;
+      cursor: crosshair;
+      overflow: hidden;
+    }
+    #canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 1;
+    }
+    #colors {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 10px;
+      z-index: 10;
+    }
+    .color-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 3px solid white;
+      cursor: pointer;
+    }
+    .color-btn.picked {
+      border: 3px solid yellow;
+      transform: scale(1.3);
+    }
+    #shapes {
+      position: fixed;
+      bottom: 120px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 10px;
+      z-index: 10;
+    }
+    .shape-btn {
+      padding: 6px 14px;
+      background: none;
+      border: 3px solid white;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      color: white;
+      font-family: sans-serif;
+      font-weight: bold;
+    }
+    .shape-btn.picked {
+      border: 3px solid yellow;
+      transform: scale(1.2);
+    }
+    #size-picker {
+      position: fixed;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      z-index: 10;
+    }
+    #size-picker label {
+      color: white;
+      font-family: sans-serif;
+      font-size: 16px;
+    }
+    #size-slider {
+      width: 200px;
+      cursor: pointer;
+    }
+    #size-preview {
+      background: white;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    #bright-picker {
+      position: fixed;
+      bottom: 160px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      z-index: 10;
+    }
+    #bright-picker label {
+      color: white;
+      font-family: sans-serif;
+      font-size: 16px;
+    }
+    #bright-slider {
+      width: 200px;
+      cursor: pointer;
+    }
+    #bright-label {
+      color: white;
+      font-family: sans-serif;
+      font-size: 14px;
+      width: 40px;
+    }
+    #glitter-colors {
+      position: fixed;
+      right: 20px;
+      top: 50%;
+      transform: translateY(-50%);
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 10;
+      background: rgba(255,255,255,0.1);
+      padding: 14px;
+      border-radius: 16px;
+    }
+    #glitter-colors.show {
+      display: flex;
+    }
+    #glitter-colors label {
+      color: white;
+      font-family: sans-serif;
+      font-size: 14px;
+      font-weight: bold;
+      text-align: center;
+    }
+    .glitter-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 3px solid white;
+      cursor: pointer;
+      align-self: center;
+    }
+    .glitter-btn.picked {
+      border: 3px solid yellow;
+      transform: scale(1.3);
+    }
+  </style>
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+
+  <!-- Glitter color picker on the right side! -->
+  <div id="glitter-colors">
+    <label>Glitter</label>
+    <button class="glitter-btn picked" style="background:gold" onclick="pickGlitter(this, 'gold')"></button>
+    <button class="glitter-btn" style="background:silver" onclick="pickGlitter(this, 'silver')"></button>
+    <button class="glitter-btn" style="background:hotpink" onclick="pickGlitter(this, 'pink')"></button>
+    <button class="glitter-btn" style="background:cyan" onclick="pickGlitter(this, 'ice')"></button>
+    <button class="glitter-btn" style="background:linear-gradient(gold,hotpink,cyan)" onclick="pickGlitter(this, 'magic')"></button>
+  </div>
+
+  <!-- This is the brightness slider! -->
+  <div id="bright-picker">
+    <label>Dark</label>
+    <input type="range" id="bright-slider" min="0" max="100" value="50">
+    <label>Bright</label>
+    <span id="bright-label">50%</span>
+  </div>
+
+  <!-- These are the shape buttons! -->
+  <div id="shapes">
+    <button class="shape-btn picked" onclick="pickShape(this, 'circle')">Circle</button>
+    <button class="shape-btn" onclick="pickShape(this, 'square')">Square</button>
+    <button class="shape-btn" onclick="pickShape(this, 'triangle')">Triangle</button>
+    <button class="shape-btn" onclick="pickShape(this, 'star')">Star</button>
+    <button class="shape-btn" onclick="pickShape(this, 'diamond')">Diamond</button>
+    <button class="shape-btn" onclick="pickShape(this, 'glitter')">Glitter</button>
+    <button class="shape-btn" style="background:rgba(255,255,255,0.2)" onclick="fillCanvas()">Fill</button>
+    <button class="shape-btn" style="background:rgba(255,0,0,0.2)" onclick="clearCanvas()">Clear</button>
+  </div>
+
+  <!-- This is the brush size slider! -->
+  <div id="size-picker">
+    <label>Brush:</label>
+    <input type="range" id="size-slider" min="5" max="100" value="30">
+    <span id="size-preview" style="width:30px;height:30px;"></span>
+  </div>
+
+  <!-- These are the color buttons at the bottom! -->
+  <div id="colors">
+    <button class="color-btn picked" style="background:red" onclick="pickColor(this, 'red')"></button>
+    <button class="color-btn" style="background:orange" onclick="pickColor(this, 'orange')"></button>
+    <button class="color-btn" style="background:yellow" onclick="pickColor(this, 'yellow')"></button>
+    <button class="color-btn" style="background:lime" onclick="pickColor(this, 'lime')"></button>
+    <button class="color-btn" style="background:cyan" onclick="pickColor(this, 'cyan')"></button>
+    <button class="color-btn" style="background:blue" onclick="pickColor(this, 'blue')"></button>
+    <button class="color-btn" style="background:violet" onclick="pickColor(this, 'violet')"></button>
+    <button class="color-btn" style="background:hotpink" onclick="pickColor(this, 'hotpink')"></button>
+    <button class="color-btn" style="background:white" onclick="pickColor(this, 'white')"></button>
+    <button class="color-btn" style="background:linear-gradient(red,orange,yellow,lime,cyan,blue,violet)" onclick="pickColor(this, 'rainbow')"></button>
+  </div>
+  <script>
+    // This sets up our drawing space (called a "canvas")
+    var canvas = document.getElementById("canvas");
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    var ctx = canvas.getContext("2d");
+
+    // Fill paints the WHOLE screen with your color (like pouring paint on it!)
+    function fillCanvas() {
+      ctx.fillStyle = getColor();
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+
+    // Clear wipes everything away — fresh start!
+    function clearCanvas() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    // This picks a random color every time
+    function randomColor() {
+      var colors = [
+        "red", "orange", "yellow", "lime",
+        "cyan", "blue", "violet", "hotpink",
+        "white", "gold"
+      ];
+      return colors[Math.floor(Math.random() * colors.length)];
+    }
+
+    // This is the shape we're painting with right now
+    var currentShape = "circle";
+
+    // This is the glitter color
+    var glitterColor = "gold";
+    var glitterPanel = document.getElementById("glitter-colors");
+
+    // Glitter color options — each one has a list of sparkle colors
+    var glitterColors = {
+      gold:   ["#FFD700", "#FFF8DC", "#FFFACD", "#ffffff"],
+      silver: ["#C0C0C0", "#E8E8E8", "#FFFFFF", "#A9A9A9"],
+      pink:   ["#FF69B4", "#FFB6C1", "#FF1493", "#ffffff"],
+      ice:    ["#00FFFF", "#E0FFFF", "#87CEEB", "#ffffff"],
+      magic:  ["#FFD700", "#FF69B4", "#00FFFF", "#ffffff", "#C0C0C0"]
+    };
+
+    // This runs when you click a glitter color
+    function pickGlitter(btn, color) {
+      var allBtns = document.querySelectorAll(".glitter-btn");
+      for (var i = 0; i < allBtns.length; i++) {
+        allBtns[i].classList.remove("picked");
+      }
+      btn.classList.add("picked");
+      glitterColor = color;
+    }
+
+    // This runs when you click a shape button
+    function pickShape(btn, shape) {
+      var allBtns = document.querySelectorAll(".shape-btn");
+      for (var i = 0; i < allBtns.length; i++) {
+        allBtns[i].classList.remove("picked");
+      }
+      btn.classList.add("picked");
+      currentShape = shape;
+      // Show glitter colors only when glitter is picked!
+      if (shape === "glitter") {
+        glitterPanel.classList.add("show");
+      } else {
+        glitterPanel.classList.remove("show");
+      }
+    }
+
+    // This draws sparkly glitter!
+    function drawGlitter(x, y) {
+      var spread = brushSize;
+      // Draw a bunch of tiny sparkles around where you clicked
+      for (var i = 0; i < 15; i++) {
+        // Pick a random spot near your mouse
+        var sx = x + (Math.random() - 0.5) * spread * 2;
+        var sy = y + (Math.random() - 0.5) * spread * 2;
+        var sparkleSize = Math.random() * 4 + 1;
+
+        // Pick a random sparkle color from the glitter set
+        var colors = glitterColors[glitterColor];
+        var color = colors[Math.floor(Math.random() * colors.length)];
+
+        // Some sparkles are see-through (that's what "alpha" means — how see-through)
+        ctx.globalAlpha = Math.random() * 0.5 + 0.5;
+        ctx.fillStyle = color;
+
+        // Draw a tiny star shape for each sparkle
+        ctx.beginPath();
+        for (var j = 0; j < 8; j++) {
+          var r = (j % 2 === 0) ? sparkleSize : sparkleSize / 2;
+          var angle = (Math.PI * 2 * j / 8);
+          var px = sx + r * Math.cos(angle);
+          var py = sy + r * Math.sin(angle);
+          if (j === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        }
+        ctx.closePath();
+        ctx.fill();
+      }
+      // Reset see-through back to normal
+      ctx.globalAlpha = 1.0;
+    }
+
+    // This is the color we're painting with right now
+    var currentColor = "red";
+
+    // Each color name has an HSL value (Hue, Saturation, Lightness)
+    // Hue = which color (0-360, like going around a rainbow)
+    // Saturation = how vivid (100 = bright, 0 = grey)
+    // Lightness = how bright (0 = black, 50 = normal, 100 = white)
+    var colorToHSL = {
+      red:     [0, 100],
+      orange:  [30, 100],
+      yellow:  [60, 100],
+      lime:    [120, 100],
+      cyan:    [180, 100],
+      blue:    [240, 100],
+      violet:  [270, 100],
+      hotpink: [330, 100],
+      white:   [0, 0],
+      gold:    [51, 100]
+    };
+
+    // This is the brightness — the slider controls it!
+    var brightness = 50;
+    var brightSlider = document.getElementById("bright-slider");
+    var brightLabel = document.getElementById("bright-label");
+    brightSlider.addEventListener("input", function() {
+      brightness = Number(brightSlider.value);
+      brightLabel.textContent = brightness + "%";
+    });
+
+    // This turns our color + brightness into an actual color the computer can use
+    function getColor() {
+      if (currentColor === "rainbow") {
+        var keys = Object.keys(colorToHSL);
+        var pick = keys[Math.floor(Math.random() * keys.length)];
+        var hsl = colorToHSL[pick];
+        return "hsl(" + hsl[0] + ", " + hsl[1] + "%, " + brightness + "%)";
+      }
+      var hsl = colorToHSL[currentColor];
+      return "hsl(" + hsl[0] + ", " + hsl[1] + "%, " + brightness + "%)";
+    }
+
+    // This is the brush size — the slider controls it!
+    var brushSize = 30;
+    var slider = document.getElementById("size-slider");
+    var preview = document.getElementById("size-preview");
+    slider.addEventListener("input", function() {
+      brushSize = Number(slider.value);
+      // Update the little preview circle so you can see how big your brush is
+      preview.style.width = brushSize + "px";
+      preview.style.height = brushSize + "px";
+    });
+
+    // This runs when you click a color button
+    function pickColor(btn, color) {
+      // Remove the "picked" look from all buttons
+      var allBtns = document.querySelectorAll(".color-btn");
+      for (var i = 0; i < allBtns.length; i++) {
+        allBtns[i].classList.remove("picked");
+      }
+      // Add the "picked" look to the one you clicked
+      btn.classList.add("picked");
+      currentColor = color;
+    }
+
+    // This draws a shape wherever we tell it
+    function drawShape(x, y) {
+      var size = brushSize / 2 + Math.random() * (brushSize / 4);
+      ctx.fillStyle = getColor();
+      ctx.beginPath();
+
+      if (currentShape === "circle") {
+        // A circle is just a round path
+        ctx.arc(x, y, size, 0, Math.PI * 2);
+
+      } else if (currentShape === "square") {
+        // A square is a rectangle where all sides are the same length
+        ctx.rect(x - size, y - size, size * 2, size * 2);
+
+      } else if (currentShape === "triangle") {
+        // A triangle has 3 points — we draw lines between them
+        ctx.moveTo(x, y - size);           // top point
+        ctx.lineTo(x - size, y + size);    // bottom left
+        ctx.lineTo(x + size, y + size);    // bottom right
+        ctx.closePath();                    // connect back to the top
+
+      } else if (currentShape === "star") {
+        // A star has 5 outer points and 5 inner points
+        for (var i = 0; i < 10; i++) {
+          var r = (i % 2 === 0) ? size : size / 2;  // big point, small point, big, small...
+          var angle = (Math.PI * 2 * i / 10) - Math.PI / 2;
+          var px = x + r * Math.cos(angle);
+          var py = y + r * Math.sin(angle);
+          if (i === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        }
+        ctx.closePath();
+
+      } else if (currentShape === "diamond") {
+        // A diamond is like a square turned sideways
+        ctx.moveTo(x, y - size);      // top
+        ctx.lineTo(x + size, y);      // right
+        ctx.lineTo(x, y + size);      // bottom
+        ctx.lineTo(x - size, y);      // left
+        ctx.closePath();
+      }
+
+      ctx.fill();
+    }
+
+    // This picks what to draw — glitter or a normal shape
+    function draw(x, y) {
+      if (currentShape === "glitter") {
+        drawGlitter(x, y);
+      } else {
+        drawShape(x, y);
+      }
+    }
+
+    // Draw when you click!
+    canvas.addEventListener("click", function(e) {
+      draw(e.clientX, e.clientY);
+    });
+
+    // Draw when you move the mouse while holding the button down!
+    var painting = false;
+    canvas.addEventListener("mousedown", function() { painting = true; });
+    canvas.addEventListener("mouseup", function() { painting = false; });
+    canvas.addEventListener("mousemove", function(e) {
+      if (painting) {
+        draw(e.clientX, e.clientY);
+      }
+    });
+  </script>
+</body>
+</html>

@@ -49,6 +49,20 @@
       width: 100%;
       max-width: 920px;
     }
+    #toolbar-toggles {
+      display: none;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .toolbar-toggle-btn.active {
+      background: rgba(255,255,255,0.18);
+      border-color: yellow;
+      color: yellow;
+    }
+    .toolbar-section {
+      width: 100%;
+    }
     #colors {
       display: flex;
       gap: 6px;
@@ -89,17 +103,27 @@
     }
     #sliders {
       display: flex;
-      gap: 12px;
+      gap: 10px 18px;
       flex-wrap: wrap;
       justify-content: center;
       align-items: center;
     }
-    #sliders label {
+    .slider-group {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-width: 280px;
+      flex-wrap: nowrap;
+    }
+    .slider-text {
       color: white;
       font-size: 14px;
+      white-space: nowrap;
+      flex: 0 0 auto;
     }
-    #size-slider, #bright-slider {
-      width: min(32vw, 160px);
+    .slider-group input[type="range"] {
+      flex: 1 1 140px;
       min-width: 110px;
       height: 28px;
       cursor: pointer;
@@ -109,6 +133,7 @@
       align-items: center;
       gap: 8px;
       min-width: 72px;
+      flex: 0 0 auto;
     }
     #size-preview {
       background: white;
@@ -125,6 +150,8 @@
     #bright-label {
       color: white;
       font-size: 14px;
+      min-width: 44px;
+      text-align: left;
     }
     #glitter-colors {
       position: fixed;
@@ -165,6 +192,15 @@
         gap: 8px;
         padding: 10px 8px calc(10px + env(safe-area-inset-bottom));
       }
+      #toolbar-toggles {
+        display: flex;
+      }
+      .toolbar-section {
+        display: none !important;
+      }
+      .toolbar-section.mobile-show {
+        display: flex !important;
+      }
       .shape-btn {
         padding: 8px 10px;
         font-size: 14px;
@@ -173,18 +209,19 @@
         width: 36px;
         height: 36px;
       }
-      #sliders label,
+      .slider-text,
       #bright-label,
       #size-label {
         font-size: 16px;
       }
-      #size-slider, #bright-slider {
-        width: min(42vw, 180px);
+      .slider-group {
+        width: 100%;
+        min-width: 0;
       }
       #glitter-colors {
         right: 10px;
         top: auto;
-        bottom: 188px;
+        bottom: 80px;
         transform: none;
         flex-direction: row;
       }
@@ -206,7 +243,12 @@
 
   <!-- All tools live in one toolbar at the bottom -->
   <div id="toolbar">
-    <div id="shapes">
+    <div id="toolbar-toggles">
+      <button class="shape-btn toolbar-toggle-btn active" type="button" data-section="shapes">Tools</button>
+      <button class="shape-btn toolbar-toggle-btn" type="button" data-section="sliders">Brush</button>
+      <button class="shape-btn toolbar-toggle-btn" type="button" data-section="colors">Colors</button>
+    </div>
+    <div id="shapes" class="toolbar-section mobile-show">
       <button class="shape-btn picked" onclick="pickShape(this, 'circle')">Circle</button>
       <button class="shape-btn" onclick="pickShape(this, 'square')">Square</button>
       <button class="shape-btn" onclick="pickShape(this, 'triangle')">Triangle</button>
@@ -218,19 +260,23 @@
       <button class="shape-btn" style="background:rgba(255,255,255,0.2)" onclick="fillCanvas()">Fill</button>
       <button class="shape-btn" style="background:rgba(255,0,0,0.2)" onclick="clearCanvas()">Clear</button>
     </div>
-    <div id="sliders">
-      <label>Brush:</label>
-      <input type="range" id="size-slider" min="5" max="100" value="30">
-      <span id="size-preview-wrap">
-        <span id="size-preview" style="width:20px;height:20px;"></span>
-        <span id="size-label">30px</span>
-      </span>
-      <label>Dark</label>
-      <input type="range" id="bright-slider" min="0" max="100" value="50">
-      <label>Bright</label>
-      <span id="bright-label">50%</span>
+    <div id="sliders" class="toolbar-section">
+      <div class="slider-group">
+        <span class="slider-text">Brush:</span>
+        <input type="range" id="size-slider" min="5" max="100" value="30">
+        <span id="size-preview-wrap">
+          <span id="size-preview" style="width:20px;height:20px;"></span>
+          <span id="size-label">30px</span>
+        </span>
+      </div>
+      <div class="slider-group">
+        <span class="slider-text">Dark</span>
+        <input type="range" id="bright-slider" min="0" max="100" value="50">
+        <span class="slider-text">Bright</span>
+        <span id="bright-label">50%</span>
+      </div>
     </div>
-    <div id="colors">
+    <div id="colors" class="toolbar-section">
       <button class="color-btn picked" style="background:red" onclick="pickColor(this, 'red')"></button>
       <button class="color-btn" style="background:orange" onclick="pickColor(this, 'orange')"></button>
       <button class="color-btn" style="background:yellow" onclick="pickColor(this, 'yellow')"></button>
@@ -258,6 +304,7 @@
       canvas.height = window.innerHeight;
       ctx.putImageData(imageData, 0, 0);
       updateBrushPreview();
+      syncMobileToolbar();
     });
 
     // Fill paints the WHOLE screen with your color (like pouring paint on it!)
@@ -287,6 +334,14 @@
     // This is the glitter color
     var glitterColor = "gold";
     var glitterPanel = document.getElementById("glitter-colors");
+    var toolbar = document.getElementById("toolbar");
+    var toolbarToggleButtons = document.querySelectorAll(".toolbar-toggle-btn");
+    var toolbarSections = {
+      shapes: document.getElementById("shapes"),
+      sliders: document.getElementById("sliders"),
+      colors: document.getElementById("colors")
+    };
+    var openMobileSection = "shapes";
 
     // Glitter color options — each one has a list of sparkle colors
     var glitterColors = {
@@ -321,6 +376,53 @@
       } else {
         glitterPanel.classList.remove("show");
       }
+      updateGlitterPanelPosition();
+    }
+
+    function isMobileToolbar() {
+      return window.innerWidth < 700;
+    }
+
+    function updateGlitterPanelPosition() {
+      if (isMobileToolbar()) {
+        glitterPanel.style.bottom = (toolbar.offsetHeight + 12) + "px";
+      } else {
+        glitterPanel.style.bottom = "";
+      }
+    }
+
+    function setMobileSection(sectionName) {
+      if (isMobileToolbar() && openMobileSection === sectionName) {
+        openMobileSection = null;
+      } else {
+        openMobileSection = sectionName;
+      }
+      syncMobileToolbar();
+    }
+
+    function syncMobileToolbar() {
+      var mobileMode = isMobileToolbar();
+      var sectionNames = Object.keys(toolbarSections);
+
+      for (var i = 0; i < sectionNames.length; i++) {
+        var name = sectionNames[i];
+        var isOpen = !mobileMode || openMobileSection === name;
+        toolbarSections[name].classList.toggle("mobile-show", isOpen);
+      }
+
+      for (var j = 0; j < toolbarToggleButtons.length; j++) {
+        var btn = toolbarToggleButtons[j];
+        var active = mobileMode && btn.getAttribute("data-section") === openMobileSection;
+        btn.classList.toggle("active", active);
+      }
+
+      updateGlitterPanelPosition();
+    }
+
+    for (var toggleIndex = 0; toggleIndex < toolbarToggleButtons.length; toggleIndex++) {
+      toolbarToggleButtons[toggleIndex].addEventListener("click", function() {
+        setMobileSection(this.getAttribute("data-section"));
+      });
     }
 
     // This draws sparkly glitter!
@@ -449,6 +551,7 @@
       updateBrushPreview();
     });
     updateBrushPreview();
+    syncMobileToolbar();
 
     // This runs when you click a color button
     function pickColor(btn, color) {

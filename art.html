@@ -173,6 +173,7 @@
     <button class="shape-btn" onclick="pickShape(this, 'triangle')">Triangle</button>
     <button class="shape-btn" onclick="pickShape(this, 'star')">Star</button>
     <button class="shape-btn" onclick="pickShape(this, 'diamond')">Diamond</button>
+    <button class="shape-btn" onclick="pickShape(this, 'split')">Split</button>
     <button class="shape-btn" onclick="pickShape(this, 'glitter')">Glitter</button>
     <button class="shape-btn" style="background:rgba(255,255,255,0.2)" onclick="fillCanvas()">Fill</button>
     <button class="shape-btn" style="background:rgba(255,0,0,0.2)" onclick="clearCanvas()">Clear</button>
@@ -344,6 +345,43 @@
       return "hsl(" + hsl[0] + ", " + hsl[1] + "%, " + brightness + "%)";
     }
 
+    // This gets the OPPOSITE color — like the other side of a color wheel
+    // Red's opposite is cyan, blue's opposite is orange, etc.
+    function getOppositeColor() {
+      if (currentColor === "rainbow") {
+        var keys = Object.keys(colorToHSL);
+        var pick = keys[Math.floor(Math.random() * keys.length)];
+        var hsl = colorToHSL[pick];
+        // Add 180 to flip to the opposite side of the color wheel
+        var oppositeHue = (hsl[0] + 180) % 360;
+        return "hsl(" + oppositeHue + ", " + hsl[1] + "%, " + brightness + "%)";
+      }
+      var hsl = colorToHSL[currentColor];
+      // For white (no saturation), the opposite is black
+      if (hsl[1] === 0) {
+        return "hsl(0, 0%, " + (100 - brightness) + "%)";
+      }
+      var oppositeHue = (hsl[0] + 180) % 360;
+      return "hsl(" + oppositeHue + ", " + hsl[1] + "%, " + brightness + "%)";
+    }
+
+    // This draws a split circle — half one color, half the opposite!
+    function drawSplit(x, y) {
+      var size = brushSize / 2 + Math.random() * (brushSize / 4);
+
+      // Left half — your picked color
+      ctx.beginPath();
+      ctx.arc(x, y, size, Math.PI * 0.5, Math.PI * 1.5);
+      ctx.fillStyle = getColor();
+      ctx.fill();
+
+      // Right half — the opposite color
+      ctx.beginPath();
+      ctx.arc(x, y, size, Math.PI * 1.5, Math.PI * 0.5);
+      ctx.fillStyle = getOppositeColor();
+      ctx.fill();
+    }
+
     // This is the brush size — the slider controls it!
     var brushSize = 30;
     var slider = document.getElementById("size-slider");
@@ -412,10 +450,12 @@
       ctx.fill();
     }
 
-    // This picks what to draw — glitter or a normal shape
+    // This picks what to draw
     function draw(x, y) {
       if (currentShape === "glitter") {
         drawGlitter(x, y);
+      } else if (currentShape === "split") {
+        drawSplit(x, y);
       } else {
         drawShape(x, y);
       }

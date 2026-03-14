@@ -1,8 +1,11 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
   <title>Johnny's Art Page</title>
   <style>
+    * { touch-action: none; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
     body {
       margin: 0;
       background: black;
@@ -15,67 +18,72 @@
       left: 0;
       z-index: 1;
     }
-    #colors {
+    #toolbar {
       position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      display: flex;
-      gap: 10px;
+      bottom: 0;
+      left: 0;
+      right: 0;
       z-index: 10;
+      background: rgba(0,0,0,0.7);
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+    #colors {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      justify-content: center;
     }
     .color-btn {
-      width: 40px;
-      height: 40px;
+      width: 32px;
+      height: 32px;
       border-radius: 50%;
-      border: 3px solid white;
+      border: 2px solid white;
       cursor: pointer;
+      padding: 0;
     }
     .color-btn.picked {
-      border: 3px solid yellow;
-      transform: scale(1.3);
+      border: 2px solid yellow;
+      transform: scale(1.2);
     }
     #shapes {
-      position: fixed;
-      bottom: 120px;
-      left: 50%;
-      transform: translateX(-50%);
       display: flex;
-      gap: 10px;
-      z-index: 10;
+      gap: 5px;
+      flex-wrap: wrap;
+      justify-content: center;
     }
     .shape-btn {
-      padding: 6px 14px;
+      padding: 4px 10px;
       background: none;
-      border: 3px solid white;
-      border-radius: 8px;
+      border: 2px solid white;
+      border-radius: 6px;
       cursor: pointer;
-      font-size: 16px;
+      font-size: 13px;
       color: white;
       font-family: sans-serif;
       font-weight: bold;
     }
     .shape-btn.picked {
-      border: 3px solid yellow;
-      transform: scale(1.2);
+      border: 2px solid yellow;
+      transform: scale(1.1);
     }
-    #size-picker {
-      position: fixed;
-      bottom: 80px;
-      left: 50%;
-      transform: translateX(-50%);
+    #sliders {
       display: flex;
-      align-items: center;
       gap: 12px;
-      z-index: 10;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
     }
-    #size-picker label {
+    #sliders label {
       color: white;
       font-family: sans-serif;
-      font-size: 16px;
+      font-size: 13px;
     }
-    #size-slider {
-      width: 200px;
+    #size-slider, #bright-slider {
+      width: 120px;
       cursor: pointer;
     }
     #size-preview {
@@ -83,30 +91,10 @@
       border-radius: 50%;
       display: inline-block;
     }
-    #bright-picker {
-      position: fixed;
-      bottom: 160px;
-      left: 50%;
-      transform: translateX(-50%);
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      z-index: 10;
-    }
-    #bright-picker label {
-      color: white;
-      font-family: sans-serif;
-      font-size: 16px;
-    }
-    #bright-slider {
-      width: 200px;
-      cursor: pointer;
-    }
     #bright-label {
       color: white;
       font-family: sans-serif;
-      font-size: 14px;
-      width: 40px;
+      font-size: 13px;
     }
     #glitter-colors {
       position: fixed;
@@ -158,46 +146,41 @@
     <button class="glitter-btn" style="background:linear-gradient(gold,hotpink,cyan)" onclick="pickGlitter(this, 'magic')"></button>
   </div>
 
-  <!-- This is the brightness slider! -->
-  <div id="bright-picker">
-    <label>Dark</label>
-    <input type="range" id="bright-slider" min="0" max="100" value="50">
-    <label>Bright</label>
-    <span id="bright-label">50%</span>
-  </div>
-
-  <!-- These are the shape buttons! -->
-  <div id="shapes">
-    <button class="shape-btn picked" onclick="pickShape(this, 'circle')">Circle</button>
-    <button class="shape-btn" onclick="pickShape(this, 'square')">Square</button>
-    <button class="shape-btn" onclick="pickShape(this, 'triangle')">Triangle</button>
-    <button class="shape-btn" onclick="pickShape(this, 'star')">Star</button>
-    <button class="shape-btn" onclick="pickShape(this, 'diamond')">Diamond</button>
-    <button class="shape-btn" onclick="pickShape(this, 'glitter')">Glitter</button>
-    <button class="shape-btn" id="split-btn" onclick="toggleSplit()">Split: Off</button>
-    <button class="shape-btn" style="background:rgba(255,255,255,0.2)" onclick="fillCanvas()">Fill</button>
-    <button class="shape-btn" style="background:rgba(255,0,0,0.2)" onclick="clearCanvas()">Clear</button>
-  </div>
-
-  <!-- This is the brush size slider! -->
-  <div id="size-picker">
-    <label>Brush:</label>
-    <input type="range" id="size-slider" min="5" max="100" value="30">
-    <span id="size-preview" style="width:30px;height:30px;"></span>
-  </div>
-
-  <!-- These are the color buttons at the bottom! -->
-  <div id="colors">
-    <button class="color-btn picked" style="background:red" onclick="pickColor(this, 'red')"></button>
-    <button class="color-btn" style="background:orange" onclick="pickColor(this, 'orange')"></button>
-    <button class="color-btn" style="background:yellow" onclick="pickColor(this, 'yellow')"></button>
-    <button class="color-btn" style="background:lime" onclick="pickColor(this, 'lime')"></button>
-    <button class="color-btn" style="background:cyan" onclick="pickColor(this, 'cyan')"></button>
-    <button class="color-btn" style="background:blue" onclick="pickColor(this, 'blue')"></button>
-    <button class="color-btn" style="background:violet" onclick="pickColor(this, 'violet')"></button>
-    <button class="color-btn" style="background:hotpink" onclick="pickColor(this, 'hotpink')"></button>
-    <button class="color-btn" style="background:white" onclick="pickColor(this, 'white')"></button>
-    <button class="color-btn" style="background:linear-gradient(red,orange,yellow,lime,cyan,blue,violet)" onclick="pickColor(this, 'rainbow')"></button>
+  <!-- All tools live in one toolbar at the bottom -->
+  <div id="toolbar">
+    <div id="shapes">
+      <button class="shape-btn picked" onclick="pickShape(this, 'circle')">Circle</button>
+      <button class="shape-btn" onclick="pickShape(this, 'square')">Square</button>
+      <button class="shape-btn" onclick="pickShape(this, 'triangle')">Triangle</button>
+      <button class="shape-btn" onclick="pickShape(this, 'star')">Star</button>
+      <button class="shape-btn" onclick="pickShape(this, 'diamond')">Diamond</button>
+      <button class="shape-btn" onclick="pickShape(this, 'glitter')">Glitter</button>
+      <button class="shape-btn" id="eraser-btn" onclick="pickShape(this, 'eraser')">Eraser</button>
+      <button class="shape-btn" id="split-btn" onclick="toggleSplit()">Split: Off</button>
+      <button class="shape-btn" style="background:rgba(255,255,255,0.2)" onclick="fillCanvas()">Fill</button>
+      <button class="shape-btn" style="background:rgba(255,0,0,0.2)" onclick="clearCanvas()">Clear</button>
+    </div>
+    <div id="sliders">
+      <label>Brush:</label>
+      <input type="range" id="size-slider" min="5" max="100" value="30">
+      <span id="size-preview" style="width:20px;height:20px;"></span>
+      <label>Dark</label>
+      <input type="range" id="bright-slider" min="0" max="100" value="50">
+      <label>Bright</label>
+      <span id="bright-label">50%</span>
+    </div>
+    <div id="colors">
+      <button class="color-btn picked" style="background:red" onclick="pickColor(this, 'red')"></button>
+      <button class="color-btn" style="background:orange" onclick="pickColor(this, 'orange')"></button>
+      <button class="color-btn" style="background:yellow" onclick="pickColor(this, 'yellow')"></button>
+      <button class="color-btn" style="background:lime" onclick="pickColor(this, 'lime')"></button>
+      <button class="color-btn" style="background:cyan" onclick="pickColor(this, 'cyan')"></button>
+      <button class="color-btn" style="background:blue" onclick="pickColor(this, 'blue')"></button>
+      <button class="color-btn" style="background:violet" onclick="pickColor(this, 'violet')"></button>
+      <button class="color-btn" style="background:hotpink" onclick="pickColor(this, 'hotpink')"></button>
+      <button class="color-btn" style="background:white" onclick="pickColor(this, 'white')"></button>
+      <button class="color-btn" style="background:linear-gradient(red,orange,yellow,lime,cyan,blue,violet)" onclick="pickColor(this, 'rainbow')"></button>
+    </div>
   </div>
   <script>
     // This sets up our drawing space (called a "canvas")
@@ -205,6 +188,15 @@
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
     var ctx = canvas.getContext("2d");
+
+    // If the phone rotates or window resizes, fix the canvas size
+    window.addEventListener("resize", function() {
+      // Save what's drawn, resize, then put it back
+      var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      ctx.putImageData(imageData, 0, 0);
+    });
 
     // Fill paints the WHOLE screen with your color (like pouring paint on it!)
     function fillCanvas() {
@@ -466,29 +458,61 @@
       }
     }
 
+    // The eraser clears a circle area (like painting with the background)
+    function drawEraser(x, y) {
+      var size = brushSize / 2 + Math.random() * (brushSize / 4);
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(x, y, size, 0, Math.PI * 2);
+      ctx.clip();
+      ctx.clearRect(x - size, y - size, size * 2, size * 2);
+      ctx.restore();
+    }
+
     // This picks what to draw
     function draw(x, y) {
-      if (currentShape === "glitter") {
+      if (currentShape === "eraser") {
+        drawEraser(x, y);
+      } else if (currentShape === "glitter") {
         drawGlitter(x, y);
       } else {
         drawShape(x, y);
       }
     }
 
-    // Draw when you click!
-    canvas.addEventListener("click", function(e) {
+    // --- Mouse events (for computers) ---
+    var painting = false;
+
+    canvas.addEventListener("mousedown", function(e) {
+      painting = true;
       draw(e.clientX, e.clientY);
     });
-
-    // Draw when you move the mouse while holding the button down!
-    var painting = false;
-    canvas.addEventListener("mousedown", function() { painting = true; });
     canvas.addEventListener("mouseup", function() { painting = false; });
     canvas.addEventListener("mousemove", function(e) {
       if (painting) {
         draw(e.clientX, e.clientY);
       }
     });
+
+    // --- Touch events (for phones and tablets) ---
+    // We listen on the canvas only so tapping buttons doesn't draw
+    canvas.addEventListener("touchstart", function(e) {
+      e.preventDefault();
+      painting = true;
+      var touch = e.touches[0];
+      draw(touch.clientX, touch.clientY);
+    }, { passive: false });
+    canvas.addEventListener("touchend", function(e) {
+      e.preventDefault();
+      painting = false;
+    }, { passive: false });
+    canvas.addEventListener("touchmove", function(e) {
+      e.preventDefault();
+      if (painting) {
+        var touch = e.touches[0];
+        draw(touch.clientX, touch.clientY);
+      }
+    }, { passive: false });
   </script>
 </body>
 </html>
